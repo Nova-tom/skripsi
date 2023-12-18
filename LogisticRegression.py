@@ -1,28 +1,56 @@
 from flask import Flask, request, jsonify
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression  # Change this import
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 import json
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import string
 
 app = Flask(__name__)
 
+# Download NLTK resources
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+def preprocess_text(text):
+    # Convert to lowercase
+    text = text.lower()
+
+    # Tokenization and remove punctuation
+    tokens = [word.strip(string.punctuation) for word in text.split()]
+
+    # Remove stopwords
+    stop_words = set(stopwords.words('indonesian'))
+    tokens = [word for word in tokens if word not in stop_words]
+
+    # Lemmatization
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(word) for word in tokens]
+
+    # Reassemble the text
+    processed_text = ' '.join(tokens)
+
+    return processed_text
+
 def load_data_from_json(data_file):
-    with open(data_file, 'r') as file:
+    with open(data_file, 'r', encoding='utf-8') as file:
         data = json.load(file)
     return data
 
-def train_logistic_regression_classifier(data):  # Change this function name
+def train_logistic_regression_classifier(data):
     # Split the data into features (X) and labels (y)
-    X = [entry['text'] for entry in data]
+    X = [preprocess_text(entry['text']) for entry in data]
     y = [entry['label'] for entry in data]
 
     # Split the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Create a pipeline with CountVectorizer and LogisticRegression
-    model = make_pipeline(CountVectorizer(), LogisticRegression())  # Change this line
+    model = make_pipeline(CountVectorizer(), LogisticRegression())
 
     # Train the model
     model.fit(X_train, y_train)
@@ -41,8 +69,11 @@ def train_logistic_regression_classifier(data):  # Change this function name
     return model
 
 def predicted_category(report, model):
+    # Preprocess the input text before making predictions
+    processed_report = preprocess_text(report)
+
     # Make a prediction using the trained model
-    predicted_category = model.predict([report])[0]
+    predicted_category = model.predict([processed_report])[0]
 
     return {"predicted_category": predicted_category}
 
@@ -56,7 +87,7 @@ def predict_category():
         report_text = request_data.get('report_text', '')
 
         # Get the predicted category for the report
-        prediction_result = predicted_category(report_text, lr_model)  # Change this line
+        prediction_result = predicted_category(report_text, lr_model)
 
         return jsonify(prediction_result)
 
@@ -71,7 +102,7 @@ if __name__ == '__main__':
     data = load_data_from_json(data_file)
 
     # Train the logistic regression classifier
-    lr_model = train_logistic_regression_classifier(data)  # Change this line
+    lr_model = train_logistic_regression_classifier(data)
 
     # Run the Flask app
     app.run(debug=True)
