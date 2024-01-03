@@ -75,7 +75,8 @@ def predicted_category(report, model):
     # Make a prediction using the trained model
     predicted_category = model.predict([processed_report])[0]
 
-    return {"predicted_category": predicted_category}
+    return {"predicted_category": predicted_category ,
+            "metode":"bayes"}
 
 @app.route('/predict_category', methods=['POST'])
 def predict_category():

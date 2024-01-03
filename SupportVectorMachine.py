@@ -12,9 +12,6 @@ import string
 
 app = Flask(__name__)
 
-# Download NLTK resources
-nltk.download('stopwords')
-nltk.download('wordnet')
 
 def preprocess_text(text):
     # Convert to lowercase
@@ -75,7 +72,8 @@ def predicted_category(report, model):
     # Make a prediction using the trained model
     predicted_category = model.predict([processed_report])[0]
 
-    return {"predicted_category": predicted_category}
+    return {"predicted_category": predicted_category,
+            "category": "svm"}
 
 @app.route('/predict_category', methods=['POST'])
 def predict_category():
